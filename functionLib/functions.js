@@ -140,6 +140,76 @@ var getCommitMessages = function (data){
   })
 }
 
+var getLangs = function(data){
+  return new Promise(function(resolve, reject){
+    console.log("Getting Languages...")
+    var calls = 0;
+    var nameLangMap = {};
+    var repoNames = data.repoNames;
+    repoNames.forEach((repoName, index) => {
+      data.github.repos.getLanguages({
+        user: data.user,
+        repo: repoName,
+        per_page: 100
+      }, (error, response) => {
+        if (error) {
+          console.log(`ERROR in GH CALL @${repoName}: ${error}`);
+        } else if (response) {
+          console.log(`Languages from @${repoName} retrieved! (${calls+1})`); // success message
+          nameLangMap[repoNames[index].replace(/\./g,' ')] = response; // constructing the object
+        }
+        if (++calls === repoNames.length){ // check to see if all calls have returned
+          console.log("Got Languages.") // success message
+          resolve({user:user, github:github, nameLangMap:nameLangMap, repoNames:repoNames})
+        }
+      })
+    })
+  })
+}
+
+var parseLangs = function (allLangs) {
+  var langStats = {};
+    for (var key1 in allLangs) {
+      for (var key2 in allLangs[key1]) {
+        if (key2 != 'meta') {
+          if (langStats.hasOwnProperty(key2)) {
+            langStats[key2]+=allLangs[key1][key2];
+          } else {
+            langStats[key2]=allLangs[key1][key2];
+          }
+        }
+      }
+    }
+  return langStats;
+}
+
+var langAverages = function(langStats){
+  var langAverages = {};
+  var sum = 0
+    for (var key1 in langStats){
+      sum += langStats[key1]
+    }
+    for (var lang in langStats) {
+      langAverages[lang]=langStats[lang]/sum
+    }
+  return langAverages;
+}
+
+var msgAverages = function (messages){
+  var averageLength = 0;
+  var numMessages = 0;
+  var totalLength = 0;
+  for (var key in messages){
+    for (var i = 0; i < messages[key].length; i++){
+      totalLength += messages[key][i].length
+      numMessages++;
+    }
+  }
+  averageLength = totalLength/numMessages;
+  return averageLength;
+}
+
+
 var test = function(){
   var github = setUp();
   checkGHUser(github, "solowt");
